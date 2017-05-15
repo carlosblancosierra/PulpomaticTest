@@ -1,12 +1,12 @@
 package com.example.android.pulpomatictest;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -14,18 +14,25 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MainActivity extends AppCompatActivity
         implements OnMapReadyCallback,
@@ -38,10 +45,16 @@ public class MainActivity extends AppCompatActivity
     GoogleMap m_map;
     boolean mapReady = false;
 
-    private static final int MY_PERMISSIONS_REQUEST = 554;
+    private static final int MY_PERMISSIONS_REQUEST = 101;
+    private static final int PLACE_PICKER_REQUEST = 201;
 
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
+
+    FloatingActionButton placePickerButton;
+    LatLng destinationLatLng;
+    MarkerOptions destinationMarkerOptions;
+
 
 
 
@@ -51,12 +64,11 @@ public class MainActivity extends AppCompatActivity
 
         setContentView(R.layout.activity_main);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_place_picker);
-        fab.setOnClickListener(new View.OnClickListener() {
+        placePickerButton = (FloatingActionButton) findViewById(R.id.fab_place_picker);
+        placePickerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                pickPlace();
             }
         });
 
@@ -68,6 +80,8 @@ public class MainActivity extends AppCompatActivity
 
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
 
     }
 
@@ -219,6 +233,62 @@ public class MainActivity extends AppCompatActivity
             mGoogleApiClient.disconnect();
         }
         super.onStop();
+    }
+
+    private void addCircles (GoogleMap map, LatLng center){
+
+        for (int i = 0; i < 5; i++){
+            double radius;
+            if (i == 0){
+                radius = 10;
+            } else {
+                radius = i * 50;
+            }
+            CircleOptions circle = new CircleOptions().center(center).radius(radius);
+            map.addCircle(circle);
+        }
+    }
+
+    private void pickPlace(){
+        PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+        Intent intent = null;
+        try {
+            intent = builder.build(this);
+        } catch (GooglePlayServicesRepairableException e) {
+            e.printStackTrace();
+        } catch (GooglePlayServicesNotAvailableException e) {
+            e.printStackTrace();
+        }
+        final Intent finalIntent = intent;
+        startActivityForResult(finalIntent, PLACE_PICKER_REQUEST);
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PLACE_PICKER_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                Place place = PlacePicker.getPlace(this,data);
+                String toastMsg = String.format("Place: %s", place.getName());
+                Toast.makeText(this, toastMsg, Toast.LENGTH_LONG).show();
+
+                destinationLatLng = place.getLatLng();
+                destinationMarkerOptions = new MarkerOptions()
+                        .position(destinationLatLng)
+                        .title("Destination");
+
+                m_map.addMarker(destinationMarkerOptions);
+
+                addCircles(m_map, destinationLatLng);
+
+//                destinationSelected = true;
+
+//                destination.setLatitude(destinationLatLng.latitude);
+//                destination.setLatitude(destinationLatLng.longitude);
+
+//                float distance = m_map.getMyLocation().distanceTo(destination);
+//                distanteTextView.setText(Float.toString(distance));
+
+            }
+        }
     }
 
 }

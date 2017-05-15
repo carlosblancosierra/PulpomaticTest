@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -61,9 +62,13 @@ public class MainActivity extends AppCompatActivity
 
     FloatingActionButton placePickerButton;
     LatLng destinationLatLng;
+    Location mDestinationLocation;
     MarkerOptions destinationMarkerOptions;
 
     ArrayList<Geofence> mGeofenceList;
+
+    TextView mDistanceTextView;
+    TextView mDestinationTextView;
 
 
     @Override
@@ -91,6 +96,8 @@ public class MainActivity extends AppCompatActivity
 
         mGeofenceList = new ArrayList<>();
 
+        mDistanceTextView = (TextView) findViewById(R.id.text_view_distance);
+        mDestinationTextView = (TextView) findViewById(R.id.text_view_destination);
     }
 
     @Override
@@ -120,7 +127,10 @@ public class MainActivity extends AppCompatActivity
         mapReady = true;
         m_map = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission
+                (this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -132,8 +142,9 @@ public class MainActivity extends AppCompatActivity
         }
         m_map.setMyLocationEnabled(true);
 
+
         LatLng mexicoCity = new LatLng(19.3590412, -99.2726068);
-        CameraPosition target = CameraPosition.builder().target(mexicoCity).zoom(14).build();
+        CameraPosition target = CameraPosition.builder().target(mexicoCity).zoom(10).build();
         m_map.moveCamera(CameraUpdateFactory.newCameraPosition(target));
     }
 
@@ -148,6 +159,7 @@ public class MainActivity extends AppCompatActivity
 
                     // permission was granted, yay! Do the
                     // task you need to do.
+
 
                     if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                             != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission
@@ -164,8 +176,8 @@ public class MainActivity extends AppCompatActivity
                         return;
                     }
 
-                    m_map.setMyLocationEnabled(true);
-
+                    LocationServices.FusedLocationApi.requestLocationUpdates(
+                            mGoogleApiClient, mLocationRequest, this);
 
                 } else {
 
@@ -182,6 +194,10 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
@@ -208,6 +224,8 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, this);
     }
 
     @Override
@@ -223,6 +241,17 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onLocationChanged(Location location) {
 
+        if (mDestinationLocation != null) {
+//            String meters = location.distanceTo(mDestinationLocation) + "m  ";
+//            mDistanceTextView.setText(meters);
+
+            float distance[] = new float[1];
+            Location.distanceBetween(location.getLatitude(), location.getLongitude(),
+                    destinationLatLng.latitude, destinationLatLng.longitude,
+                    distance);
+
+            mDistanceTextView.setText(Float.toString(distance[0]) + "m");
+        }
     }
 
     @Override
@@ -275,8 +304,13 @@ public class MainActivity extends AppCompatActivity
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
                 Place place = PlacePicker.getPlace(this, data);
-                String toastMsg = String.format("Place: %s", place.getName());
+                String toastMsg = String.format("Place: %s", place.getAddress());
+                mDestinationTextView.setText(place.getAddress());
                 Toast.makeText(this, toastMsg, Toast.LENGTH_LONG).show();
+
+                mDestinationLocation = new Location("destination");
+                mDestinationLocation.setLatitude(place.getLatLng().latitude);
+                mDestinationLocation.setLatitude(place.getLatLng().longitude);
 
                 destinationLatLng = place.getLatLng();
 
@@ -290,13 +324,6 @@ public class MainActivity extends AppCompatActivity
 
                 addCircles(m_map, destinationLatLng);
 
-//                destinationSelected = true;
-
-//                destination.setLatitude(destinationLatLng.latitude);
-//                destination.setLatitude(destinationLatLng.longitude);
-
-//                float distance = m_map.getMyLocation().distanceTo(destination);
-//                distanteTextView.setText(Float.toString(distance));
 
             }
         }
@@ -417,5 +444,6 @@ public class MainActivity extends AppCompatActivity
         }
 
     }
+
 
 }

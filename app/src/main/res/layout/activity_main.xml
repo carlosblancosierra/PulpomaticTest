@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
     tools:context="com.example.android.pulpomatictest.MainActivity">
 
     <android.support.design.widget.FloatingActionButton
@@ -20,47 +21,109 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="5dp"
-        android:text="Please Pick a Destination"
-        android:textAlignment="center"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
-        app:layout_constraintHorizontal_bias="0.0"
+    <LinearLayout
+        android:id="@+id/linear_layout"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:layout_margin="5dp"
+        android:background="@android:color/white"
+        android:orientation="horizontal"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:gravity="end"
-        android:text="20m"
-        android:textAlignment="textEnd"
-        android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
-        app:layout_constraintBottom_toTopOf="@+id/map"
-        app:layout_constraintHorizontal_bias="0.507"
-        app:layout_constraintLeft_toRightOf="@+id/textView"
-        app:layout_constraintRight_toRightOf="parent"
-        map:layout_constraintTop_toTopOf="parent" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:orientation="vertical">
+
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1.5"
+                android:background="#283593"
+                android:fontFamily="sans-serif-smallcaps"
+                android:paddingLeft="10dp"
+                android:paddingTop="2dp"
+                android:text="Destination"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/text_view_destination"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2"
+                android:gravity="center_vertical"
+                android:paddingLeft="10dp"
+                android:text="Please Pick a Destination"
+                android:textColor="@color/colorPrimaryText"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@color/colorAccent"
+            android:orientation="vertical">
+
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1.5"
+                android:background="#283593"
+                android:fontFamily="sans-serif-smallcaps"
+                android:paddingEnd="5dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="5dp"
+                android:paddingStart="10dp"
+                android:paddingTop="2dp"
+                android:text="Distance"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/text_view_distance"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="2"
+                android:gravity="center_vertical"
+                android:paddingEnd="5dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="5dp"
+                android:paddingStart="10dp"
+                android:text="Meters"
+                android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toTopOf="@+id/map"
+                app:layout_constraintHorizontal_bias="0.507"
+                app:layout_constraintLeft_toRightOf="@+id/textView"
+                app:layout_constraintRight_toRightOf="parent"
+                map:layout_constraintTop_toTopOf="parent" />
+        </LinearLayout>
+
+
+    </LinearLayout>
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.MapFragment"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView"
-        map:cameraBearing="112.5"
-        map:cameraTargetLat="19.3576906"
-        map:cameraTargetLng="-99.28127"
-        map:cameraTilt="65"
-        map:cameraZoom="17" />
+        app:layout_constraintTop_toBottomOf="@+id/linear_layout"
+        app:layout_constraintVertical_bias="0.0"
+        map:cameraZoom="10" />
 
 </android.support.constraint.ConstraintLayout>

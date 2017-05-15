@@ -1,5 +1,6 @@
 package com.example.android.pulpomatictest;
 
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -20,6 +21,10 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -34,11 +39,14 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity
         implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener {
+        LocationListener,
+        ResultCallback<Status> {
 
     private String LOG_TAG = "LOG_TAG";
 
@@ -55,7 +63,7 @@ public class MainActivity extends AppCompatActivity
     LatLng destinationLatLng;
     MarkerOptions destinationMarkerOptions;
 
-
+    ArrayList<Geofence> mGeofenceList;
 
 
     @Override
@@ -81,7 +89,7 @@ public class MainActivity extends AppCompatActivity
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-
+        mGeofenceList = new ArrayList<>();
 
     }
 
@@ -209,7 +217,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.i(LOG_TAG, "onConnectionFailed " + connectionResult.getErrorCode() );
+        Log.i(LOG_TAG, "onConnectionFailed " + connectionResult.getErrorCode());
     }
 
     @Override
@@ -235,11 +243,11 @@ public class MainActivity extends AppCompatActivity
         super.onStop();
     }
 
-    private void addCircles (GoogleMap map, LatLng center){
+    private void addCircles(GoogleMap map, LatLng center) {
 
-        for (int i = 0; i < 5; i++){
+        for (int i = 0; i < 5; i++) {
             double radius;
-            if (i == 0){
+            if (i == 0) {
                 radius = 10;
             } else {
                 radius = i * 50;
@@ -249,7 +257,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void pickPlace(){
+    private void pickPlace() {
         PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
         Intent intent = null;
         try {
@@ -266,11 +274,14 @@ public class MainActivity extends AppCompatActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PLACE_PICKER_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Place place = PlacePicker.getPlace(this,data);
+                Place place = PlacePicker.getPlace(this, data);
                 String toastMsg = String.format("Place: %s", place.getName());
                 Toast.makeText(this, toastMsg, Toast.LENGTH_LONG).show();
 
                 destinationLatLng = place.getLatLng();
+
+                addGeofences();
+
                 destinationMarkerOptions = new MarkerOptions()
                         .position(destinationLatLng)
                         .title("Destination");
@@ -289,6 +300,122 @@ public class MainActivity extends AppCompatActivity
 
             }
         }
+    }
+
+    private void populateGeofenceList() {
+
+        for (int i = 0; i < 5; i++) {
+            int radiusInMeters = 0;
+            String requestId = "error in geofence";
+
+            switch (i) {
+                case 0:
+                    radiusInMeters = 10;
+                    requestId = "10 meters geofence";
+                    break;
+                case 1:
+                    radiusInMeters = 50;
+                    requestId = "50 meters geofence";
+                    break;
+                case 2:
+                    radiusInMeters = 100;
+                    requestId = "100 meters geofence";
+                    break;
+                case 3:
+                    radiusInMeters = 150;
+                    requestId = "150 meters geofence";
+                    break;
+                case 4:
+                    radiusInMeters = 200;
+                    requestId = "200 meters geofence";
+                    break;
+            }
+
+            if (radiusInMeters != 0) {
+                mGeofenceList.add(new Geofence.Builder()
+                        // Set the request ID of the geofence. This is a string to identify this
+                        // geofence
+                        .setRequestId(requestId)
+
+                        // Set the circular region of this geofence.
+                        .setCircularRegion(destinationLatLng.latitude,
+                                destinationLatLng.longitude,
+                                radiusInMeters)
+
+                        // Set the expiration duration of the geofence. This geofence gets automatically
+                        // removed after this period of time.
+                        .setExpirationDuration(Constants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
+
+                        // Set the transition types of interest. Alerts are only generated for these
+                        // transition. We track entry and exit transitions in this sample.
+                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+
+                        // Create the geofence.
+                        .build()
+                );
+
+                Log.v(LOG_TAG, "Geofence : " + requestId + " radius in meters: " + radiusInMeters);
+            }
+        }
+    }
+
+    private GeofencingRequest getGeofencingRequest() {
+        GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
+        builder.addGeofences(mGeofenceList);
+        return builder.build();
+    }
+
+    private PendingIntent getGeofencePendingIntent() {
+
+        Intent intent = new Intent(this, GeoFenceTransitionsIntentService.class);
+
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when
+        // calling addGeofences() and removeGeofences().
+        return PendingIntent.getService(this, 0, intent, PendingIntent.
+                FLAG_UPDATE_CURRENT);
+
+    }
+
+    @Override
+    public void onResult(@NonNull Status status) {
+        if (status.isSuccess()) {
+            Toast.makeText(
+                    this,
+                    "Geofence Added",
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            // Get the status code for the error and log it using a user-friendly message.
+            String errorMessage = GeofenceErrorMessages.getErrorString(this,
+                    status.getStatusCode());
+            Log.e(LOG_TAG, errorMessage);
+        }
+    }
+
+    private void addGeofences() {
+
+        if (!mGoogleApiClient.isConnected()) {
+            Toast.makeText(this, getString(R.string.not_connected), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+
+            populateGeofenceList();
+
+            LocationServices.GeofencingApi.addGeofences(
+                    mGoogleApiClient,
+                    // The GeofenceRequest object.
+                    getGeofencingRequest(),
+                    // A pending intent that that is reused when calling removeGeofences(). This
+                    // pending intent is used to generate an intent when a matched geofence
+                    // transition is observed.
+                    getGeofencePendingIntent()
+            ).setResultCallback(this); // Result processed in onResult().
+        } catch (SecurityException securityException) {
+            // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
+        }
+
     }
 
 }
